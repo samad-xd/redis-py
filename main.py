@@ -1,4 +1,5 @@
 import socket
+import threading
 
 
 def handle_client(conn, addr):
@@ -21,11 +22,18 @@ def handle_client(conn, addr):
 
 def main():
     server = socket.create_server(address=("localhost", 6379))
+    server.settimeout(1)
     print("Server Started")
 
     try:
-        conn, addr = server.accept()
-        handle_client(conn, addr)
+        while True:
+            try:
+                conn, addr = server.accept()
+
+            except socket.timeout:
+                continue
+
+            threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
     except KeyboardInterrupt:
         print("Shutting down server")
