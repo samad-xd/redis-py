@@ -1,5 +1,6 @@
 import asyncio
-from resp import parse_data, build_error, RESPParseError, build_simple_string
+from resp import parse_data, build_error, RESPParseError
+from executor import executor
 
 
 async def handle_client(reader, writer):
@@ -18,10 +19,11 @@ async def handle_client(reader, writer):
                 if not args:
                     response = build_error("ERR", "empty command")
                 else:
-                    response = build_simple_string("OK")
+                    response = executor.execute(args)
 
-                writer.write(response.encode())
-                await writer.drain()
+                if response:
+                    writer.write(response.encode())
+                    await writer.drain()
 
             except RESPParseError as e:
                 response = build_error("ERR", f"Protocol error: {e}")
