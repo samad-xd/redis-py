@@ -1,4 +1,5 @@
 import asyncio
+from resp import parse_data, build_error, RESPParseError, build_simple_string
 
 
 async def handle_client(reader, writer):
@@ -7,11 +8,31 @@ async def handle_client(reader, writer):
 
     try:
         while True:
-            data = await reader.read(1024)
+            try:
+                args = await parse_data(reader)
 
-            if not data:
-                print(f"Client {addr} connection closed")
+                if args is None:
+                    print(f"Client {addr} connection closed")
+                    break
+
+                if not args:
+                    response = build_error("ERR", "empty command")
+                else:
+                    response = build_simple_string("OK")
+
+                writer.write(response.encode())
+                await writer.drain()
+
+            except RESPParseError as e:
+                response = build_error("ERR", f"Protocol error: {e}")
+                writer.write(response.encode())
+                await writer.drain()
                 break
+
+            except Exception as e:
+                response = build_error("ERR", e)
+                writer.write(response.encode())
+                await writer.drain()
 
     except ConnectionResetError:
         print(f"Connection {addr} forcibly disconnected")
