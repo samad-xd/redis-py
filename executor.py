@@ -1,4 +1,4 @@
-from resp import build_bulk_string
+from resp import build_bulk_string, build_simple_string
 
 
 class Executor:
@@ -15,13 +15,19 @@ class Executor:
     def execute(self, command_parts, *args, **kwargs):
         command = command_parts[0].upper()
         if command in self.routes:
-            return self.routes[command](command_parts[1:], *args, **kwargs)
+            func = self.routes[command]
+            return func(command_parts[1:], *args, **kwargs)
         raise ValueError(f"Unknown command: {command}")
 
 
 executor = Executor()
 
 
+@executor("PING")
+def ping(*args, **kwargs):
+    return build_simple_string("PONG")
+
+
 @executor("ECHO")
-def get(command_parts):
+def echo(command_parts):
     return build_bulk_string(" ".join(command_parts))

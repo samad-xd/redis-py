@@ -1,6 +1,8 @@
 import asyncio
-from resp import parse_data, build_error, RESPParseError
+import commands #noqa -> importing this to register the commands
+
 from executor import executor
+from resp import RESPParseError, build_error, parse_data
 
 
 async def handle_client(reader, writer):
