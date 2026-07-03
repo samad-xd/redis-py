@@ -1,5 +1,5 @@
 from executor import executor
-from resp import build_bulk_string, build_integer, build_simple_string, build_error
+from resp import build_bulk_string, build_error, build_integer, build_simple_string
 from storage import kv_store
 
 
@@ -148,3 +148,84 @@ def persist(command_parts):
     key = command_parts[0]
     status = kv_store.persist(key)
     return build_integer(status)
+
+
+@executor("INCR")
+def incr(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    key = command_parts[0]
+    try:
+        value = kv_store.incr(key)
+    except ValueError:
+        return build_error("ERR", "value is not an integer")
+    return build_integer(value)
+
+
+@executor("DECR")
+def decr(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    key = command_parts[0]
+    try:
+        value = kv_store.decr(key)
+    except ValueError:
+        return build_error("ERR", "value is not an integer")
+    return build_integer(value)
+
+
+@executor("INCRBY")
+def incrby(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    if len(command_parts) == 1:
+        return build_error("ERR", "missing incr value")
+    key = command_parts[0]
+    try:
+        incr_value = int(command_parts[1])
+    except ValueError:
+        return build_error("ERR", "incr value must be a number")
+    try:
+        value = kv_store.incrby(key, incr_value)
+    except ValueError:
+        return build_error("ERR", "value is not an integer")
+    return build_integer(value)
+
+
+@executor("DECRBY")
+def decrby(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    if len(command_parts) == 1:
+        return build_error("ERR", "missing decr value")
+    key = command_parts[0]
+    try:
+        decr_value = int(command_parts[1])
+    except ValueError:
+        return build_error("ERR", "decr value must be a number")
+    try:
+        value = kv_store.decrby(key, decr_value)
+    except ValueError:
+        return build_error("ERR", "value is not an integer")
+    return build_integer(value)
+
+
+@executor("APPEND")
+def append(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    if len(command_parts) == 1:
+        return build_error("ERR", "missing append value")
+    key = command_parts[0]
+    value = command_parts[1]
+    length = kv_store.append(key, value)
+    return build_integer(length)
+
+
+@executor("STRLEN")
+def strlen(command_parts):
+    if not command_parts:
+        return build_error("ERR", "missing key")
+    key = command_parts[0]
+    length = kv_store.strlen(key)
+    return build_integer(length)
