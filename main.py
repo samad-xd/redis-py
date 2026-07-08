@@ -21,7 +21,7 @@ async def handle_client(reader, writer):
                 if not args:
                     response = build_error("ERR", "empty command")
                 else:
-                    response = executor.execute(args)
+                    response = await executor.execute(args)
 
                 if response:
                     writer.write(response.encode())

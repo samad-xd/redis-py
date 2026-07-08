@@ -10,26 +10,26 @@ from storage import list_store
 
 
 @executor("LPUSH")
-def lpush(command_parts):
+async def lpush(command_parts):
     if not command_parts:
         return build_error("ERR", "missing key and item")
     if len(command_parts) == 1:
         return build_error("ERR", "missing item")
     key = command_parts[0]
     items = command_parts[1:]
-    count = list_store.lpush(key, items)
+    count = await list_store.lpush(key, items)
     return build_integer(count)
 
 
 @executor("RPUSH")
-def rpush(command_parts):
+async def rpush(command_parts):
     if not command_parts:
         return build_error("ERR", "missing key and item")
     if len(command_parts) == 1:
         return build_error("ERR", "missing item")
     key = command_parts[0]
     items = command_parts[1:]
-    count = list_store.rpush(key, items)
+    count = await list_store.rpush(key, items)
     return build_integer(count)
 
 
@@ -118,7 +118,7 @@ def lindex(command_parts):
 @executor("LTRIM")
 def ltrim(command_parts):
     if not command_parts or len(command_parts) < 3:
-        return build_error("ERR", "argumnets key, start, and stop are required")
+        return build_error("ERR", "arguments key, start, and stop are required")
     key = command_parts[0]
     try:
         start = int(command_parts[1])
@@ -127,3 +127,32 @@ def ltrim(command_parts):
         return build_error("ERR", "start and stop must be a number")
     list_store.ltrim(key, start, stop)
     return build_simple_string("OK")
+
+
+@executor("BLPOP")
+async def blpop(command_parts):
+    if not command_parts or len(command_parts) < 2:
+        return build_error("ERR", "arguments key(s) and timeout are required")
+    try:
+        timeout = int(command_parts[-1])
+    except ValueError:
+        return build_error("ERR", "timeout must be a number")
+    if timeout < 0:
+        return build_error("ERR", "timeout is negative")
+    keys = command_parts[:-1]
+    pair = await list_store.blpop(keys, timeout)
+    return build_array(pair)
+
+@executor("BRPOP")
+async def brpop(command_parts):
+    if not command_parts or len(command_parts) < 2:
+        return build_error("ERR", "arguments key(s) and timeout are required")
+    try:
+        timeout = int(command_parts[-1])
+    except ValueError:
+        return build_error("ERR", "timeout must be a number")
+    if timeout < 0:
+        return build_error("ERR", "timeout is negative")
+    keys = command_parts[:-1]
+    pair = await list_store.brpop(keys, timeout)
+    return build_array(pair)
