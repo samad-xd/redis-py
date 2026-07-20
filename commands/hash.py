@@ -1,91 +1,94 @@
+from typing import List
+
+from exceptions import ValidationError
 from executor import executor
-from resp import build_array, build_bulk_string, build_error, build_integer
-from storage import hash_store
+from resp import build_array, build_bulk_string, build_integer
+from storage import Database
 
 
 @executor("HSET")
-def hset(command_parts):
+def hset(db: Database, command_parts: List[str]):
     if len(command_parts) < 3:
-        return build_error("ERR", "arguments key field value are required")
+        raise ValidationError("key, field(s) and value(s) missing")
     if len(command_parts) % 2 == 0:
-        return build_error("ERR", "missing value for a field")
+        raise ValidationError("missing value for a field")
     key = command_parts[0]
     fields_values = command_parts[1:]
-    added_count = hash_store.hset(key, fields_values)
+    added_count = db.hash_store.hset(key, fields_values)
     return build_integer(added_count)
 
 
 @executor("HGET")
-def hget(command_parts):
+def hget(db: Database, command_parts: List[str]):
     if len(command_parts) < 2:
-        return build_error("ERR", "arguments key and field are required")
+        raise ValidationError("key and field missing")
     key = command_parts[0]
     field = command_parts[1]
-    value = hash_store.hget(key, field)
+    value = db.hash_store.hget(key, field)
     return build_bulk_string(value)
 
 
 @executor("HMGET")
-def hmget(command_parts):
+def hmget(db: Database, command_parts: List[str]):
     if len(command_parts) < 2:
-        return build_error("ERR", "arguments key and field are required")
+        raise ValidationError("key and field(s) missing")
     key = command_parts[0]
     fields = command_parts[1:]
-    values = hash_store.hmget(key, fields)
+    values = db.hash_store.hmget(key, fields)
     return build_array(values)
 
 
 @executor("HGETALL")
-def hgetall(command_parts):
+def hgetall(db: Database, command_parts: List[str]):
     if not command_parts:
-        return build_error("ERR", "missing key")
+        raise ValidationError("key missing")
     key = command_parts[0]
-    fields_values = hash_store.hgetall(key)
+    fields_values = db.hash_store.hgetall(key)
     return build_array(fields_values)
 
 
 @executor("HDEL")
-def hdel(command_parts):
+def hdel(db: Database, command_parts: List[str]):
     if len(command_parts) < 2:
-        return build_error("ERR", "arguments key and field are required")
+        raise ValidationError("key and field missing")
     key = command_parts[0]
     fields = command_parts[1:]
-    deleted_count = hash_store.hdel(key, fields)
+    deleted_count = db.hash_store.hdel(key, fields)
     return build_integer(deleted_count)
 
 
 @executor("HEXISTS")
-def hexists(command_parts):
+def hexists(db: Database, command_parts: List[str]):
     if len(command_parts) < 2:
-        return build_error("ERR", "arguments key and field are required")
+        raise ValidationError("key and field missing")
     key = command_parts[0]
     field = command_parts[1]
-    exists = hash_store.hexists(key, field)
+    exists = db.hash_store.hexists(key, field)
     return build_integer(exists)
 
 
 @executor("HLEN")
-def hlen(command_parts):
+def hlen(db: Database, command_parts: List[str]):
     if not command_parts:
-        return build_error("ERR", "missing key")
+        raise ValidationError("key missing")
     key = command_parts[0]
-    length = hash_store.hlen(key)
+    length = db.hash_store.hlen(key)
     return build_integer(length)
 
 
 @executor("HKEYS")
-def hkeys(command_parts):
+def hkeys(db: Database, command_parts: List[str]):
     if not command_parts:
-        return build_error("ERR", "missing key")
+        raise ValidationError("key missing")
     key = command_parts[0]
-    fields = hash_store.hkeys(key)
+    fields = db.hash_store.hkeys(key)
     return build_array(fields)
 
 
 @executor("HVALS")
-def hvals(command_parts):
+def hvals(db: Database, command_parts: List[str]):
     if not command_parts:
-        return build_error("ERR", "missing key")
+        raise ValidationError("key missing")
     key = command_parts[0]
-    values = hash_store.hvals(key)
+    values = db.hash_store.hvals(key)
     return build_array(values)

@@ -1,5 +1,4 @@
-from .hash import hash_store
-from .kv import kv_store
-from .list import list_store
+from .store import Store
+from .database import Database
 
-__all__ = ["kv_store", "list_store", "hash_store"]
+__all__ = ["Store", "Database"]

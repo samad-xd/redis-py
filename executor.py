@@ -12,11 +12,11 @@ class Executor:
 
         return decorator
 
-    async def execute(self, command_parts, *args, **kwargs):
+    async def execute(self, db, command_parts, *args, **kwargs):
         command = command_parts[0].upper()
         if command in self.routes:
             func = self.routes[command]
-            result = func(command_parts[1:], *args, **kwargs)
+            result = func(db, command_parts[1:], *args, **kwargs)
 
             if isinstance(result, CoroutineType):
                 return await result

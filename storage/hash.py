@@ -1,12 +1,22 @@
-from collections import defaultdict
+from models import Entry, RedisType
+from exceptions import WrongTypeError
 
 
 class HashStore:
-    def __init__(self):
-        self._store: dict[str, dict] = defaultdict(dict)
+    def __init__(self, db: dict[str, Entry]):
+        self.db = db
+
+    def _validate_type(self, entry: Entry):
+        if entry.type != RedisType.HASH:
+            raise WrongTypeError("value is not a hash")
 
     def hset(self, key, fields_values):
-        hash = self._store[key]
+        entry = self.db.get(key)
+        if entry:
+            self._validate_type(entry)
+        else:
+            entry = Entry(type=RedisType.HASH, data={})
+        hash = entry.data
         newly_added_fields_count = 0
         for i in range(0, len(fields_values), 2):
             field = fields_values[i]
@@ -14,76 +24,84 @@ class HashStore:
             if field not in hash:
                 newly_added_fields_count += 1
             hash[field] = value
+        self.db[key] = entry
         return newly_added_fields_count
 
     def hget(self, key, field):
-        if key in self._store:
-            hash = self._store.get(key)
-            if field in hash:
-                return hash.get(field)
-        return None
+        entry = self.db.get(key)
+        if not entry:
+            return None
+        self._validate_type(entry)
+        hash = entry.data
+        return hash.get(field, None)
 
     def hmget(self, key, fields):
-        if key not in self._store:
-            return [None] * len(fields)
         values = []
-        hash = self._store.get(key)
+        entry = self.db.get(key)
+        if not entry:
+            return values
+        self._validate_type(entry)
+        hash = entry.data
         for field in fields:
-            values.append(hash.get(field))
+            value = hash.get(field, None)
+            values.append(value)
         return values
 
     def hgetall(self, key):
-        if key not in self._store:
-            return []
         fields_values = []
-        hash = self._store.get(key)
+        entry = self.db.get(key)
+        if not entry:
+            return fields_values
+        self._validate_type(entry)
+        hash = entry.data
         for field, value in hash.items():
             fields_values.append(field)
             fields_values.append(value)
         return fields_values
 
     def hdel(self, key, fields):
-        if key not in self._store:
+        entry = self.db.get(key)
+        if not entry:
             return 0
-        hash = self._store.get(key)
+        self._validate_type(entry)
+        hash = entry.data
         deleted_count = 0
         for field in fields:
             if field in hash:
                 del hash[field]
                 deleted_count += 1
+        if len(hash) == 0:
+            self.db.pop(key)
         return deleted_count
 
     def hexists(self, key, field):
-        if key not in self._store:
+        entry = self.db.get(key)
+        if not entry:
             return 0
-        hash = self._store.get(key)
-        if field not in hash:
-            return 0
-        return 1
+        self._validate_type(entry)
+        hash = entry.data
+        return 1 if field in hash else 0
 
     def hlen(self, key):
-        if key not in self._store:
+        entry = self.db.get(key)
+        if not entry:
             return 0
-        hash = self._store.get(key)
+        self._validate_type(entry)
+        hash = entry.data
         return len(hash)
 
     def hkeys(self, key):
-        if key not in self._store:
+        entry = self.db.get(key)
+        if not entry:
             return []
-        hash = self._store.get(key)
-        fields = []
-        for field in hash.keys():
-            fields.append(field)
-        return fields
+        self._validate_type(entry)
+        hash = entry.data
+        return list(hash.keys())
 
     def hvals(self, key):
-        if key not in self._store:
+        entry = self.db.get(key)
+        if not entry:
             return []
-        hash = self._store.get(key)
-        values = []
-        for value in hash.values():
-            values.append(value)
-        return values
-
-
-hash_store = HashStore()
+        self._validate_type(entry)
+        hash = entry.data
+        return list(hash.values())

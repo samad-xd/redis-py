@@ -1,7 +1,9 @@
 import asyncio
-from collections import defaultdict, deque
+from collections import deque, defaultdict
 from dataclasses import dataclass
 from itertools import islice
+from models import Entry, RedisType
+from exceptions import WrongTypeError
 
 
 @dataclass
@@ -12,77 +14,111 @@ class Waiter:
 
 
 class ListStore:
-    def __init__(self):
-        self._store: dict[str, deque] = defaultdict(deque)
+    def __init__(self, db: dict[str, Entry]):
         self._waiters: dict[str, deque] = defaultdict(deque)
         self._lock = asyncio.Lock()
+        self.db = db
+
+    def _validate_type(self, entry: Entry):
+        if entry.type != RedisType.LIST:
+            raise WrongTypeError("value is not a list")
 
     async def lpush(self, key, items):
+        entry = self.db.get(key)
+        if entry:
+            self._validate_type(entry)
+        else:
+            entry = Entry(type=RedisType.LIST, data=deque())
+        dq = entry.data
         async with self._lock:
             for item in items:
                 active_waiter = self._pop_active_waiter(key)
                 if active_waiter:
                     self._finish_waiter(active_waiter, [key, item])
                 else:
-                    self._store[key].appendleft(item)
-            return len(self._store[key])
+                    dq.appendleft(item)
+            if dq:
+                self.db[key] = entry
+            return len(dq)
 
     async def rpush(self, key, items):
+        entry = self.db.get(key)
+        if entry is None:
+            entry = Entry(type=RedisType.LIST, data=deque())
+        else:
+            self._validate_type(entry)
+        dq = entry.data
         async with self._lock:
             for item in items:
                 active_waiter = self._pop_active_waiter(key)
                 if active_waiter:
                     self._finish_waiter(active_waiter, [key, item])
                 else:
-                    self._store[key].append(item)
-            return len(self._store[key])
+                    dq.append(item)
+            if dq:
+                self.db[key] = entry
+            return len(dq)
 
     def lpop(self, key):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return None
-        item = dq.popleft()
-        return item
+        self._validate_type(entry)
+        dq = entry.data
+        return dq.popleft()
 
     def lpop_with_count(self, key, count):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return None
+        self._validate_type(entry)
+        dq = entry.data
         items = []
         for _ in range(count):
             if not dq:
+                self.db.pop(key)
                 break
             item = dq.popleft()
             items.append(item)
         return items
-
+    
     def rpop(self, key):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return None
-        item = dq.pop()
-        return item
+        self._validate_type(entry)
+        dq = entry.data
+        return dq.pop()
 
     def rpop_with_count(self, key, count):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return None
+        self._validate_type(entry)
+        dq = entry.data
         items = []
         for _ in range(count):
             if not dq:
+                self.db.pop(key)
                 break
             item = dq.pop()
             items.append(item)
         return items
 
     def llen(self, key):
-        dq = self._store.get(key)
+        entry = self.db.get(key)
+        if entry is None:
+            return 0
+        self._validate_type(entry)
+        dq = entry.data
         return len(dq)
 
     def lrange(self, key, start, stop):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return []
+        self._validate_type(entry)
+        dq = entry.data
         n = len(dq)
         if start < 0:
             start = n + start
@@ -94,15 +130,19 @@ class ListStore:
         return items
 
     def lindex(self, key, index):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return None
+        self._validate_type(entry)
+        dq = entry.data
         return dq[index]
 
     def ltrim(self, key, start, stop):
-        dq = self._store.get(key)
-        if not dq:
+        entry = self.db.get(key)
+        if entry is None:
             return
+        self._validate_type(entry)
+        dq = entry.data
         n = len(dq)
         if start < 0:
             start = n + start
@@ -117,8 +157,10 @@ class ListStore:
     async def blpop(self, keys, timeout):
         async with self._lock:
             for key in keys:
-                dq = self._store.get(key)
-                if dq:
+                entry = self.db.get(key)
+                if entry:
+                    self._validate_type(entry)
+                    dq = entry.data
                     item = dq.popleft()
                     return [key, item]
             loop = asyncio.get_running_loop()
@@ -128,8 +170,10 @@ class ListStore:
                 self._waiters[key].append(waiter)
         try:
             if timeout == 0:
-                return await future
-            return await asyncio.wait_for(future, timeout)
+                result = await future
+            else:
+                result = await asyncio.wait_for(future, timeout)
+            return result
         except asyncio.TimeoutError:
             async with self._lock:
                 self._deactivate_waiter(waiter)
@@ -142,8 +186,10 @@ class ListStore:
     async def brpop(self, keys, timeout):
         async with self._lock:
             for key in keys:
-                dq = self._store.get(key)
-                if dq:
+                entry = self.db.get(key)
+                if entry:
+                    self._validate_type(entry)
+                    dq = entry.data
                     item = dq.pop()
                     return [key, item]
             loop = asyncio.get_running_loop()
@@ -179,6 +225,3 @@ class ListStore:
     def _finish_waiter(self, waiter: Waiter, pair):
         waiter.active = False
         waiter.future.set_result(pair)
-
-
-list_store = ListStore()
