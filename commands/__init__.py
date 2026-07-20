@@ -1,3 +1,3 @@
-from . import database, hash, list, string
+from . import database, hash, list, set, string
 
-__all__ = ["database", "hash", "list", "string"]
+__all__ = ["database", "hash", "list", "set", "string"]

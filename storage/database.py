@@ -2,9 +2,10 @@ import time
 
 from models import Entry
 
-from .string import StringStore
 from .hash import HashStore
 from .list import ListStore
+from .set import SetStore
+from .string import StringStore
 
 
 class Database:
@@ -13,6 +14,7 @@ class Database:
         self.string_store = StringStore(self.db)
         self.list_store = ListStore(self.db)
         self.hash_store = HashStore(self.db)
+        self.set_store = SetStore(self.db)
 
     def clear_db(self):
         self.db.clear()

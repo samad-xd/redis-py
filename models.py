@@ -7,6 +7,7 @@ class RedisType(str, Enum):
     STRING = "string"
     LIST = "list"
     HASH = "hash"
+    SET = "set"
 
 
 @dataclass
