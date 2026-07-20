@@ -1,64 +1,54 @@
-from executor import executor
-from resp import build_error, parse_data, build_simple_string
-from storage import Store
-from exceptions import RESPParseError, WrongTypeError, ValidationError
+import shlex
+import socket
+import threading
+import time
 
 
-class Client:
-    def __init__(self):
-        self.selected_db = 0
-        self.store = Store()
+def build_RESP_array(command):
+    parts = shlex.split(command)
+    return f"*{len(parts)}\r\n{'\r\n'.join([f'${len(part)}\r\n{part}' for part in parts])}\r\n"
 
-    def change_db(self, db_index):
-        if self.store.exists(db_index):
-            self.selected_db = db_index
-        else:
-            raise ValidationError("selected db does not exist")
 
-    @property
-    def db(self):
-        return self.store.get_db(self.selected_db)
+def send_command(client, command):
+    client.send(build_RESP_array(command).encode())
 
-    async def handle_incoming_messages(self, reader, writer, addr):
-        while True:
-            try:
-                args = await parse_data(reader)
 
-                if args is None:
-                    print(f"Client {addr} connection closed")
-                    break
+def receive_data(client):
+    return client.recv(1024)
 
-                if not args:
-                    response = build_error("ERR", "empty command")
-                else:
-                    if args[0] == "SELECT":
-                        self.change_db(int(args[1]))
-                        response = build_simple_string("OK")
-                    else:
-                        response = await executor.execute(self.db, args)
 
-                if response:
-                    writer.write(response.encode())
-                    await writer.drain()
+def take_commands(client):
+    while True:
+        command = input("").strip()
+        send_command(client, command)
 
-            except ValidationError as e:
-                response = build_error("ERR", e)
-                writer.write(response.encode())
-                await writer.drain()
 
-            except RESPParseError as e:
-                response = build_error("ERR", f"Protocol error: {e}")
-                writer.write(response.encode())
-                await writer.drain()
+def print_responses(client):
+    while True:
+        try:
+            data = client.recv(1024)
+            if not data:
+                print("Connection closed by server.")
                 break
+            print(data)
+        except ConnectionResetError:
+            print("Connection reset.")
+            break
 
-            except WrongTypeError as e:
-                response = build_error("WRONGTYPE", e)
-                writer.write(response.encode())
-                await writer.drain()
 
-            except Exception as e:
-                print(e)
-                response = build_error("SERVERERROR", str(e))
-                writer.write(response.encode())
-                await writer.drain()
+def main():
+    try:
+        client = socket.create_connection(("localhost", 6379))
+
+        threading.Thread(target=take_commands, args=(client,), daemon=True).start()
+        threading.Thread(target=print_responses, args=(client,), daemon=True).start()
+
+        while True:
+            time.sleep(1)
+
+    except ConnectionRefusedError:
+        print("Could not connect to the server.")
+
+
+if __name__ == "__main__":
+    main()
