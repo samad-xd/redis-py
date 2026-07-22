@@ -61,6 +61,8 @@ def build_error(kind, error_message):
 def build_bulk_string(string):
     if string is None:
         return "$-1\r\n"
+    if not isinstance(string, str):
+        string = str(string)
     return f"${len(string)}\r\n{string}\r\n"
 
 

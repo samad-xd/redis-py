@@ -5,6 +5,7 @@ from models import Entry
 from .hash import HashStore
 from .list import ListStore
 from .set import SetStore
+from .sorted_set import SortedSetStore
 from .string import StringStore
 
 
@@ -15,6 +16,7 @@ class Database:
         self.list_store = ListStore(self.db)
         self.hash_store = HashStore(self.db)
         self.set_store = SetStore(self.db)
+        self.sorted_set_store = SortedSetStore(self.db)
 
     def clear_db(self):
         self.db.clear()
