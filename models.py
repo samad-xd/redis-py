@@ -9,6 +9,7 @@ class RedisType(str, Enum):
     HASH = "hash"
     SET = "set"
     SORTED_SET = "sorted set"
+    STREAM = "stream"
 
 
 @dataclass

@@ -1,5 +1,3 @@
-from typing import List
-
 from exceptions import ValidationError
 from executor import executor
 from resp import build_array, build_bulk_string, build_integer
@@ -7,7 +5,7 @@ from storage import Database
 
 
 @executor("SADD")
-def sadd(db: Database, command_parts: List[str]):
+def sadd(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     if len(command_parts) == 1:
@@ -19,7 +17,7 @@ def sadd(db: Database, command_parts: List[str]):
 
 
 @executor("SREM")
-def srem(db: Database, command_parts: List[str]):
+def srem(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     if len(command_parts) == 1:
@@ -31,7 +29,7 @@ def srem(db: Database, command_parts: List[str]):
 
 
 @executor("SISMEMBER")
-def sismember(db: Database, command_parts: List[str]):
+def sismember(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     if len(command_parts) == 1:
@@ -43,7 +41,7 @@ def sismember(db: Database, command_parts: List[str]):
 
 
 @executor("SMEMBERS")
-def smembers(db: Database, command_parts: List[str]):
+def smembers(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -52,7 +50,7 @@ def smembers(db: Database, command_parts: List[str]):
 
 
 @executor("SCARD")
-def scard(db: Database, command_parts: List[str]):
+def scard(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -61,7 +59,7 @@ def scard(db: Database, command_parts: List[str]):
 
 
 @executor("SPOP")
-def spop(db: Database, command_parts: List[str]):
+def spop(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -81,7 +79,7 @@ def spop(db: Database, command_parts: List[str]):
 
 
 @executor("SRANDMEMBER")
-def srandmember(db: Database, command_parts: List[str]):
+def srandmember(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -99,7 +97,7 @@ def srandmember(db: Database, command_parts: List[str]):
 
 
 @executor("SINTER")
-def sinter(db: Database, command_parts: List[str]):
+def sinter(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     keys = command_parts
@@ -108,7 +106,7 @@ def sinter(db: Database, command_parts: List[str]):
 
 
 @executor("SUNION")
-def sunion(db: Database, command_parts: List[str]):
+def sunion(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     keys = command_parts
@@ -117,7 +115,7 @@ def sunion(db: Database, command_parts: List[str]):
 
 
 @executor("SDIFF")
-def sdiff(db: Database, command_parts: List[str]):
+def sdiff(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]

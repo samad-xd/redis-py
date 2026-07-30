@@ -1,5 +1,3 @@
-from typing import List
-
 from exceptions import ValidationError
 from executor import executor
 from resp import (
@@ -12,7 +10,7 @@ from storage import Database
 
 
 @executor("LPUSH")
-async def lpush(db: Database, command_parts: List[str]):
+async def lpush(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key and value(s) missing")
     if len(command_parts) == 1:
@@ -24,7 +22,7 @@ async def lpush(db: Database, command_parts: List[str]):
 
 
 @executor("RPUSH")
-async def rpush(db: Database, command_parts: List[str]):
+async def rpush(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key and value(s) missing")
     if len(command_parts) == 1:
@@ -36,7 +34,7 @@ async def rpush(db: Database, command_parts: List[str]):
 
 
 @executor("LPOP")
-def lpop(db: Database, command_parts: List[str]):
+def lpop(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -58,7 +56,7 @@ def lpop(db: Database, command_parts: List[str]):
 
 
 @executor("RPOP")
-def rpop(db: Database, command_parts: List[str]):
+def rpop(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -80,7 +78,7 @@ def rpop(db: Database, command_parts: List[str]):
 
 
 @executor("LLEN")
-def llen(db: Database, command_parts: List[str]):
+def llen(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -89,7 +87,7 @@ def llen(db: Database, command_parts: List[str]):
 
 
 @executor("LRANGE")
-def lrange(db: Database, command_parts: List[str]):
+def lrange(db: Database, command_parts: list[str]):
     if not command_parts or len(command_parts) < 3:
         raise ValidationError("arguments key, start, and stop are required")
     key = command_parts[0]
@@ -103,7 +101,7 @@ def lrange(db: Database, command_parts: List[str]):
 
 
 @executor("LINDEX")
-def lindex(db: Database, command_parts: List[str]):
+def lindex(db: Database, command_parts: list[str]):
     if not command_parts or len(command_parts) < 2:
         raise ValidationError("arguments key and index are required")
     key = command_parts[0]
@@ -118,7 +116,7 @@ def lindex(db: Database, command_parts: List[str]):
 
 
 @executor("LTRIM")
-def ltrim(db: Database, command_parts: List[str]):
+def ltrim(db: Database, command_parts: list[str]):
     if not command_parts or len(command_parts) < 3:
         raise ValidationError("arguments key, start, and stop are required")
     key = command_parts[0]
@@ -132,7 +130,7 @@ def ltrim(db: Database, command_parts: List[str]):
 
 
 @executor("BLPOP")
-async def blpop(db: Database, command_parts: List[str]):
+async def blpop(db: Database, command_parts: list[str]):
     if not command_parts or len(command_parts) < 2:
         raise ValidationError("arguments key(s) and timeout are required")
     try:
@@ -147,7 +145,7 @@ async def blpop(db: Database, command_parts: List[str]):
 
 
 @executor("BRPOP")
-async def brpop(db: Database, command_parts: List[str]):
+async def brpop(db: Database, command_parts: list[str]):
     if not command_parts or len(command_parts) < 2:
         raise ValidationError("arguments key(s) and timeout are required")
     try:

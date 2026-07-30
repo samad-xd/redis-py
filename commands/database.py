@@ -1,20 +1,18 @@
-from typing import List
-
 from exceptions import ValidationError
 from executor import executor
-from resp import build_integer, build_simple_string
+from resp import build_bulk_string, build_integer, build_simple_string
 from storage import Database
 
 
 @executor("TYPE")
-def type(db: Database, command_parts: List[str]):
+def type(db: Database, command_parts: list[str]):
     key = command_parts[0]
     value_type = db.type(key)
     return build_simple_string(value_type)
 
 
 @executor("DEL")
-def delete(db: Database, command_parts: List[str]):
+def delete(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     count = 0
@@ -26,7 +24,7 @@ def delete(db: Database, command_parts: List[str]):
 
 
 @executor("EXISTS")
-def exists(db: Database, command_parts: List[str]):
+def exists(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     count = 0
@@ -49,7 +47,7 @@ def flushdb(db: Database, *args, **kwargs):
 
 
 @executor("EXPIRE")
-def expire(db: Database, command_parts: List[str]):
+def expire(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key and seconds missing")
     if len(command_parts) == 1:
@@ -64,7 +62,7 @@ def expire(db: Database, command_parts: List[str]):
 
 
 @executor("PEXPIRE")
-def pexpire(db: Database, command_parts: List[str]):
+def pexpire(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key and seconds missing")
     if len(command_parts) == 1:
@@ -79,7 +77,7 @@ def pexpire(db: Database, command_parts: List[str]):
 
 
 @executor("TTL")
-def ttl(db: Database, command_parts: List[str]):
+def ttl(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -88,7 +86,7 @@ def ttl(db: Database, command_parts: List[str]):
 
 
 @executor("PTTL")
-def pttl(db: Database, command_parts: List[str]):
+def pttl(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -100,9 +98,14 @@ def pttl(db: Database, command_parts: List[str]):
 
 
 @executor("PERSIST")
-def persist(db: Database, command_parts: List[str]):
+def persist(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
     status = db.persist(key)
     return build_integer(status)
+
+
+@executor("INFO")
+def info(db: Database, command_parts: list[str]):
+    return build_bulk_string("Ok")

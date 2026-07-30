@@ -1,7 +1,7 @@
+from exceptions import RESPParseError, ValidationError, WrongTypeError
 from executor import executor
-from resp import build_error, parse_data, build_simple_string
+from resp import build_error, build_simple_string, parse_data
 from storage import Store
-from exceptions import RESPParseError, WrongTypeError, ValidationError
 
 
 class Client:
@@ -57,7 +57,7 @@ class Client:
                 writer.write(response.encode())
                 await writer.drain()
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(e)
                 response = build_error("SERVERERROR", str(e))
                 writer.write(response.encode())

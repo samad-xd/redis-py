@@ -1,5 +1,3 @@
-from typing import List
-
 from exceptions import WrongTypeError
 from models import Entry, RedisType
 
@@ -12,7 +10,7 @@ class SortedSetStore:
         if entry.type != RedisType.SORTED_SET:
             raise WrongTypeError("value is not a sorted set")
 
-    def zadd(self, key: str, score_member_pairs: List[tuple]):
+    def zadd(self, key: str, score_member_pairs: list[tuple]):
         entry = self.db.get(key)
         if entry:
             self._validate_type(entry)
@@ -103,7 +101,7 @@ class SortedSetStore:
             return [value for pair in sorted_members[start:stop] for value in pair]
         return [member for member, _ in sorted_members[start:stop]]
 
-    def zrem(self, key: str, members: List[str]):
+    def zrem(self, key: str, members: list[str]):
         entry = self.db.get(key)
         if entry is None:
             return 0
@@ -134,7 +132,7 @@ class SortedSetStore:
         self._validate_type(entry)
         hash = entry.data
         count = 0
-        for member, score in hash.items():
+        for score in hash.values():
             if score >= min and score <= max:
                 count += 1
         return count

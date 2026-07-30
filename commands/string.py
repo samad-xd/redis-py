@@ -1,12 +1,11 @@
+from exceptions import ValidationError
 from executor import executor
 from resp import build_bulk_string, build_integer, build_simple_string
 from storage import Database
-from exceptions import ValidationError
-from typing import List
 
 
 @executor("GET")
-def get(db: Database, command_parts: List[str]):
+def get(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -16,7 +15,7 @@ def get(db: Database, command_parts: List[str]):
 
 
 @executor("SET")
-def set(db: Database, command_parts: List[str]):
+def set(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key and value missing")
     if len(command_parts) == 1:
@@ -59,7 +58,7 @@ def set(db: Database, command_parts: List[str]):
 
 
 @executor("INCR")
-def incr(db: Database, command_parts: List[str]):
+def incr(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -72,7 +71,7 @@ def incr(db: Database, command_parts: List[str]):
 
 
 @executor("DECR")
-def decr(db: Database, command_parts: List[str]):
+def decr(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -85,7 +84,7 @@ def decr(db: Database, command_parts: List[str]):
 
 
 @executor("INCRBY")
-def incrby(db: Database, command_parts: List[str]):
+def incrby(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     if len(command_parts) == 1:
@@ -104,7 +103,7 @@ def incrby(db: Database, command_parts: List[str]):
 
 
 @executor("DECRBY")
-def decrby(db: Database, command_parts: List[str]):
+def decrby(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("missing key")
     if len(command_parts) == 1:
@@ -123,7 +122,7 @@ def decrby(db: Database, command_parts: List[str]):
 
 
 @executor("APPEND")
-def append(db: Database, command_parts: List[str]):
+def append(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("missing key")
     if len(command_parts) == 1:
@@ -136,7 +135,7 @@ def append(db: Database, command_parts: List[str]):
 
 
 @executor("STRLEN")
-def strlen(db: Database, command_parts: List[str]):
+def strlen(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("missing key")
     key = command_parts[0]

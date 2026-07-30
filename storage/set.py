@@ -1,5 +1,4 @@
 import random
-from typing import List
 
 from exceptions import WrongTypeError
 from models import Entry, RedisType
@@ -13,7 +12,7 @@ class SetStore:
         if entry.type != RedisType.SET:
             raise WrongTypeError("value is not a set")
 
-    def sadd(self, key: str, members: List[str]):
+    def sadd(self, key: str, members: list[str]):
         entry = self.db.get(key)
         if entry:
             self._validate_type(entry)
@@ -28,7 +27,7 @@ class SetStore:
         self.db[key] = entry
         return added_count
 
-    def srem(self, key: str, members: List[str]):
+    def srem(self, key: str, members: list[str]):
         entry = self.db.get(key)
         if entry is None:
             return 0
@@ -111,7 +110,7 @@ class SetStore:
             return random.sample(list(s), k=min(len(s), count))
         return random.choices(list(s), k=abs(count))
 
-    def sinter(self, keys: List[str]):
+    def sinter(self, keys: list[str]):
         min_len = float("inf")
         smallest_set = None
         sets = []
@@ -130,7 +129,7 @@ class SetStore:
         inter_members = smallest_set.intersection(*sets)
         return list(inter_members)
 
-    def sunion(self, keys: List[str]):
+    def sunion(self, keys: list[str]):
         sets = []
         for key in keys:
             entry = self.db.get(key)
@@ -142,15 +141,15 @@ class SetStore:
         union_members = set().union(*sets)
         return list(union_members)
 
-    def sdiff(self, key: str, keys: List[str]):
+    def sdiff(self, key: str, keys: list[str]):
         entry = self.db.get(key)
         if entry is None:
             return []
         self._validate_type(entry)
         base_set: set = entry.data
         sets = []
-        for key in keys:
-            entry = self.db.get(key)
+        for k in keys:
+            entry = self.db.get(k)
             if entry is None:
                 continue
             self._validate_type(entry)

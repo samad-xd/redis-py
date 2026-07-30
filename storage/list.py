@@ -1,9 +1,10 @@
 import asyncio
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from itertools import islice
-from models import Entry, RedisType
+
 from exceptions import WrongTypeError
+from models import Entry, RedisType
 
 
 @dataclass
@@ -81,7 +82,7 @@ class ListStore:
             item = dq.popleft()
             items.append(item)
         return items
-    
+
     def rpop(self, key):
         entry = self.db.get(key)
         if entry is None:
@@ -151,7 +152,7 @@ class ListStore:
         if start <= stop:
             for _ in range(n - 1, stop, -1):
                 dq.pop()
-            for _ in range(0, start):
+            for _ in range(start):
                 dq.popleft()
 
     async def blpop(self, keys, timeout):

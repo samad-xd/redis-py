@@ -6,6 +6,7 @@ from .hash import HashStore
 from .list import ListStore
 from .set import SetStore
 from .sorted_set import SortedSetStore
+from .stream import StreamStore
 from .string import StringStore
 
 
@@ -17,6 +18,7 @@ class Database:
         self.hash_store = HashStore(self.db)
         self.set_store = SetStore(self.db)
         self.sorted_set_store = SortedSetStore(self.db)
+        self.stream_store = StreamStore(self.db)
 
     def clear_db(self):
         self.db.clear()

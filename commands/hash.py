@@ -1,5 +1,3 @@
-from typing import List
-
 from exceptions import ValidationError
 from executor import executor
 from resp import build_array, build_bulk_string, build_integer
@@ -7,7 +5,7 @@ from storage import Database
 
 
 @executor("HSET")
-def hset(db: Database, command_parts: List[str]):
+def hset(db: Database, command_parts: list[str]):
     if len(command_parts) < 3:
         raise ValidationError("key, field(s) and value(s) missing")
     if len(command_parts) % 2 == 0:
@@ -19,7 +17,7 @@ def hset(db: Database, command_parts: List[str]):
 
 
 @executor("HGET")
-def hget(db: Database, command_parts: List[str]):
+def hget(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("key and field missing")
     key = command_parts[0]
@@ -29,7 +27,7 @@ def hget(db: Database, command_parts: List[str]):
 
 
 @executor("HMGET")
-def hmget(db: Database, command_parts: List[str]):
+def hmget(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("key and field(s) missing")
     key = command_parts[0]
@@ -39,7 +37,7 @@ def hmget(db: Database, command_parts: List[str]):
 
 
 @executor("HGETALL")
-def hgetall(db: Database, command_parts: List[str]):
+def hgetall(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -48,7 +46,7 @@ def hgetall(db: Database, command_parts: List[str]):
 
 
 @executor("HDEL")
-def hdel(db: Database, command_parts: List[str]):
+def hdel(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("key and field missing")
     key = command_parts[0]
@@ -58,7 +56,7 @@ def hdel(db: Database, command_parts: List[str]):
 
 
 @executor("HEXISTS")
-def hexists(db: Database, command_parts: List[str]):
+def hexists(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("key and field missing")
     key = command_parts[0]
@@ -68,7 +66,7 @@ def hexists(db: Database, command_parts: List[str]):
 
 
 @executor("HLEN")
-def hlen(db: Database, command_parts: List[str]):
+def hlen(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -77,7 +75,7 @@ def hlen(db: Database, command_parts: List[str]):
 
 
 @executor("HKEYS")
-def hkeys(db: Database, command_parts: List[str]):
+def hkeys(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]
@@ -86,7 +84,7 @@ def hkeys(db: Database, command_parts: List[str]):
 
 
 @executor("HVALS")
-def hvals(db: Database, command_parts: List[str]):
+def hvals(db: Database, command_parts: list[str]):
     if not command_parts:
         raise ValidationError("key missing")
     key = command_parts[0]

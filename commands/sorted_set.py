@@ -1,5 +1,3 @@
-from typing import List
-
 from exceptions import ValidationError
 from executor import executor
 from resp import build_array, build_bulk_string, build_integer
@@ -7,7 +5,7 @@ from storage import Database
 
 
 @executor("ZADD")
-def zadd(db: Database, command_parts: List[str]):
+def zadd(db: Database, command_parts: list[str]):
     n = len(command_parts)
     if n < 3 or n % 2 == 0:
         raise ValidationError("wrong number of arguments passed")
@@ -25,7 +23,7 @@ def zadd(db: Database, command_parts: List[str]):
 
 
 @executor("ZSCORE")
-def zscore(db: Database, command_parts: List[str]):
+def zscore(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -35,7 +33,7 @@ def zscore(db: Database, command_parts: List[str]):
 
 
 @executor("ZRANK")
-def zrank(db: Database, command_parts: List[str]):
+def zrank(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -47,7 +45,7 @@ def zrank(db: Database, command_parts: List[str]):
 
 
 @executor("ZREVRANK")
-def zrevrank(db: Database, command_parts: List[str]):
+def zrevrank(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -59,7 +57,7 @@ def zrevrank(db: Database, command_parts: List[str]):
 
 
 @executor("ZRANGE")
-def zrange(db: Database, command_parts: List[str]):
+def zrange(db: Database, command_parts: list[str]):
     if len(command_parts) < 3:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -68,17 +66,13 @@ def zrange(db: Database, command_parts: List[str]):
         stop = int(command_parts[2])
     except ValueError:
         raise ValidationError("start and stop indexes must be int")
-    with_scores = (
-        True
-        if len(command_parts) == 4 and command_parts[3].upper() == "WITHSCORES"
-        else False
-    )
+    with_scores = len(command_parts) == 4 and command_parts[3].upper() == "WITHSCORES"
     range_data = db.sorted_set_store.zrange(key, start, stop, with_scores)
     return build_array(range_data)
 
 
 @executor("ZREVRANGE")
-def zrevrange(db: Database, command_parts: List[str]):
+def zrevrange(db: Database, command_parts: list[str]):
     if len(command_parts) < 3:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -87,17 +81,13 @@ def zrevrange(db: Database, command_parts: List[str]):
         stop = int(command_parts[2])
     except ValueError:
         raise ValidationError("start and stop indexes must be int")
-    with_scores = (
-        True
-        if len(command_parts) == 4 and command_parts[3].upper() == "WITHSCORES"
-        else False
-    )
+    with_scores = len(command_parts) == 4 and command_parts[3].upper() == "WITHSCORES"
     range_data = db.sorted_set_store.zrevrange(key, start, stop, with_scores)
     return build_array(range_data)
 
 
 @executor("ZREM")
-def zrem(db: Database, command_parts: List[str]):
+def zrem(db: Database, command_parts: list[str]):
     if len(command_parts) < 2:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -107,7 +97,7 @@ def zrem(db: Database, command_parts: List[str]):
 
 
 @executor("ZCARD")
-def zcard(db: Database, command_parts: List[str]):
+def zcard(db: Database, command_parts: list[str]):
     if len(command_parts) != 1:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]
@@ -116,7 +106,7 @@ def zcard(db: Database, command_parts: List[str]):
 
 
 @executor("ZCOUNT")
-def zcount(db: Database, command_parts: List[str]):
+def zcount(db: Database, command_parts: list[str]):
     if len(command_parts) != 3:
         raise ValidationError("wrong number of arguments passed")
     key = command_parts[0]

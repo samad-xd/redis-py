@@ -1,5 +1,7 @@
-from resp import build_bulk_string, build_simple_string
 from types import CoroutineType
+
+from resp import build_bulk_string, build_simple_string
+
 
 class Executor:
     def __init__(self):

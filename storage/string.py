@@ -1,5 +1,5 @@
-from models import Entry, RedisType
 from exceptions import WrongTypeError
+from models import Entry, RedisType
 
 
 class StringStore:
