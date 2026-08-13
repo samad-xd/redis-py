@@ -1,144 +1,165 @@
+from client import Client
 from exceptions import ValidationError
 from executor import executor
 from resp import build_bulk_string, build_integer, build_simple_string
-from storage import Database
+from storage import StringStore
 
 
 @executor("GET")
-def get(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    db.ensure_key_life(key)
-    value = db.string_store.get(key)
-    return build_bulk_string(value)
+async def get(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    value = StringStore.get(client.db, key)
+
+    response = build_bulk_string(value)
+    await client.write_response(response)
 
 
 @executor("SET")
-def set(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key and value missing")
-    if len(command_parts) == 1:
-        raise ValidationError("value missing")
-    key = command_parts[0]
-    value = command_parts[1]
-    if len(command_parts) == 4:
-        time_type = command_parts[2]
+async def set(client: Client, command_parts: list[str]):
+    if len(command_parts) < 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    value = command_parts[2]
+    response = None
+
+    if len(command_parts) == 5:
+        time_type = command_parts[3]
+
         if time_type not in ("EX", "PX"):
-            raise ValidationError("expecting EX or PX and time")
+            raise ValidationError("syntax error")
+
         if time_type == "EX":
             try:
-                seconds = int(command_parts[3])
+                seconds = int(command_parts[4])
             except ValueError:
-                raise ValidationError("seconds must be a number")
+                raise ValidationError("value is not an integer or out of range")
+
         elif time_type == "PX":
             try:
-                seconds = int(command_parts[3]) / 1000
+                seconds = int(command_parts[4]) / 1000
             except ValueError:
-                raise ValidationError("milliseconds must be a number")
-        db.string_store.set(key, value)
-        db.expire(key, seconds)
-    elif len(command_parts) == 3:
+                raise ValidationError("value is not an integer or out of range")
+
+        StringStore.set(client.db, key, value)
+        client.db.expire(key, seconds)
+
+    elif len(command_parts) == 4:
         condition_type = command_parts[2]
+
         if condition_type not in ("NX", "XX"):
-            raise ValidationError("expecting NX or XX")
+            raise ValidationError("syntax error")
+
         if condition_type == "NX":
-            if db.exists(key):
-                return build_bulk_string(None)
+            if client.db.exists(key):
+                response = build_bulk_string(None)
             else:
-                db.string_store.set(key, value)
+                StringStore.set(client.db, key, value)
+
         elif condition_type == "XX":
-            if db.exists(key):
-                db.string_store.set(key, value)
+            if client.db.exists(key):
+                StringStore.set(client.db, key, value)
             else:
-                return build_bulk_string(None)
+                response = build_bulk_string(None)
+
     else:
-        db.string_store.set(key, value)
-    return build_simple_string("OK")
+        StringStore.set(client.db, key, value)
+
+    if response is None:
+        response = build_simple_string("OK")
+
+    await client.write_response(response)
 
 
 @executor("INCR")
-def incr(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    db.ensure_key_life(key)
+async def incr(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        value = db.string_store.incr(key)
+        value = StringStore.incr(client.db, key)
     except ValueError:
-        raise ValidationError("value is not an integer")
-    return build_integer(value)
+        raise ValidationError("value is not an integer or out of range")
+
+    response = build_integer(value)
+    await client.write_response(response)
 
 
 @executor("DECR")
-def decr(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    db.ensure_key_life(key)
+async def decr(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        value = db.string_store.decr(key)
+        value = StringStore.decr(client.db, key)
     except ValueError:
-        raise ValidationError("value is not an integer")
-    return build_integer(value)
+        raise ValidationError("value is not an integer or out of range")
+
+    response = build_integer(value)
+    await client.write_response(response)
 
 
 @executor("INCRBY")
-def incrby(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    if len(command_parts) == 1:
-        raise ValidationError("missing incr value")
-    key = command_parts[0]
-    db.ensure_key_life(key)
+async def incrby(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        incr_value = int(command_parts[1])
+        incr_value = int(command_parts[2])
+        value = StringStore.incrby(client.db, key, incr_value)
     except ValueError:
-        raise ValidationError("incr value must be a number")
-    try:
-        value = db.string_store.incrby(key, incr_value)
-    except ValueError:
-        raise ValidationError("value is not an integer")
-    return build_integer(value)
+        raise ValidationError("value is not an integer or out of range")
+
+    response = build_integer(value)
+    await client.write_response(response)
 
 
 @executor("DECRBY")
-def decrby(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("missing key")
-    if len(command_parts) == 1:
-        raise ValidationError("missing value")
-    key = command_parts[0]
-    db.ensure_key_life(key)
+async def decrby(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        decr_value = int(command_parts[1])
+        incr_value = int(command_parts[2])
+        value = StringStore.decrby(client.db, key, incr_value)
     except ValueError:
-        raise ValidationError("decr value must be a number")
-    try:
-        value = db.string_store.decrby(key, decr_value)
-    except ValueError:
-        raise ValidationError("value is not an integer")
-    return build_integer(value)
+        raise ValidationError("value is not an integer or out of range")
+
+    response = build_integer(value)
+    await client.write_response(response)
 
 
 @executor("APPEND")
-def append(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("missing key")
-    if len(command_parts) == 1:
-        raise ValidationError("missing append value")
-    key = command_parts[0]
-    value = command_parts[1]
-    db.ensure_key_life(key)
-    length = db.string_store.append(key, value)
-    return build_integer(length)
+async def append(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    value = command_parts[2]
+    length = StringStore.append(client.db, key, value)
+
+    response = build_integer(length)
+    await client.write_response(response)
 
 
 @executor("STRLEN")
-def strlen(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("missing key")
-    key = command_parts[0]
-    db.ensure_key_life(key)
-    length = db.string_store.strlen(key)
-    return build_integer(length)
+async def strlen(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    length = StringStore.strlen(client.db, key)
+
+    response = build_integer(length)
+    await client.write_response(response)

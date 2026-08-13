@@ -1,4 +1,4 @@
-from types import CoroutineType
+from itertools import islice
 
 from resp import build_bulk_string, build_simple_string
 
@@ -14,27 +14,26 @@ class Executor:
 
         return decorator
 
-    async def execute(self, db, command_parts, *args, **kwargs):
+    async def execute(self, client, command_parts, *args, **kwargs):
         command = command_parts[0].upper()
+
         if command in self.routes:
             func = self.routes[command]
-            result = func(db, command_parts[1:], *args, **kwargs)
-
-            if isinstance(result, CoroutineType):
-                return await result
-            return result
-        
-        raise ValueError(f"Unknown command: {command}")
+            await func(client, command_parts, *args, **kwargs)
+        else:
+            raise ValueError(f"Unknown command: {command}")
 
 
 executor = Executor()
 
 
 @executor("PING")
-def ping(*args, **kwargs):
-    return build_simple_string("PONG")
+async def ping(client, *args):
+    response = build_simple_string("PONG")
+    await client.write_response(response)
 
 
 @executor("ECHO")
-def echo(command_parts):
-    return build_bulk_string(" ".join(command_parts))
+async def echo(client, command_parts: list[str]):
+    response = build_bulk_string(" ".join(islice(command_parts, 1, None)))
+    await client.write_response(response)

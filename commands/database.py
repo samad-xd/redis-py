@@ -1,111 +1,142 @@
+from itertools import islice
+
+from client import Client
 from exceptions import ValidationError
 from executor import executor
-from resp import build_bulk_string, build_integer, build_simple_string
-from storage import Database
+from resp import build_integer, build_simple_string
 
 
 @executor("TYPE")
-def type(db: Database, command_parts: list[str]):
-    key = command_parts[0]
-    value_type = db.type(key)
-    return build_simple_string(value_type)
+async def type(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    value_type = client.db.type(key)
+
+    response = build_simple_string(value_type)
+    await client.write_response(response)
 
 
 @executor("DEL")
-def delete(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
+async def delete(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2:
+        raise ValidationError("wrong number of arguments for command")
+
     count = 0
-    for key in command_parts:
-        value = db.delete(key)
+    for key in islice(command_parts, 1, None):
+        value = client.db.delete(key)
         if value is not None:
             count += 1
-    return build_integer(count)
+
+    response = build_integer(count)
+    await client.write_response(response)
 
 
 @executor("EXISTS")
-def exists(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
+async def exists(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2:
+        raise ValidationError("wrong number of arguments for command")
+
     count = 0
-    for key in command_parts:
-        if db.exists(key):
+    for key in islice(command_parts, 1, None):
+        if client.db.exists(key):
             count += 1
-    return build_integer(count)
+
+    response = build_integer(count)
+    await client.write_response(response)
 
 
 @executor("DBSIZE")
-def dbsize(db: Database, *args, **kwargs):
-    size = db.db_size()
-    return build_integer(size)
+async def dbsize(client: Client, command_parts: list[str]):
+    if len(command_parts) != 1:
+        raise ValidationError("wrong number of arguments for command")
+
+    size = client.db.db_size()
+
+    response = build_integer(size)
+    await client.write_response(response)
 
 
 @executor("FLUSHDB")
-def flushdb(db: Database, *args, **kwargs):
-    db.clear_db()
-    return build_simple_string("OK")
+async def flushdb(client: Client, *args):
+    client.db.clear_db()
+
+    response = build_simple_string("OK")
+    await client.write_response(response)
 
 
 @executor("EXPIRE")
-def expire(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key and seconds missing")
-    if len(command_parts) == 1:
-        raise ValidationError("seconds missing")
-    key = command_parts[0]
+async def expire(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        seconds = int(command_parts[1])
+        seconds = int(command_parts[2])
     except ValueError:
-        raise ValidationError("seconds must be a number")
-    status = db.expire(key, seconds)
-    return build_integer(status)
+        raise ValidationError("value is not an integer or out of range")
+
+    status = client.db.expire(key, seconds)
+
+    response = build_integer(status)
+    await client.write_response(response)
 
 
 @executor("PEXPIRE")
-def pexpire(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key and seconds missing")
-    if len(command_parts) == 1:
-        raise ValidationError("seconds missing")
-    key = command_parts[0]
+async def pexpire(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+
     try:
-        seconds = int(command_parts[1]) / 1000
+        seconds = int(command_parts[2]) / 1000
     except ValueError:
-        raise ValidationError("milliseconds must be a number")
-    status = db.expire(key, seconds)
-    return build_integer(status)
+        raise ValidationError("value is not an integer or out of range")
+
+    status = client.db.expire(key, seconds)
+
+    response = build_integer(status)
+    await client.write_response(response)
 
 
 @executor("TTL")
-def ttl(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    time_left = db.ttl(key)
-    return build_integer(int(time_left))
+async def ttl(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    time_left = client.db.ttl(key)
+
+    response = build_integer(int(time_left))
+    await client.write_response(response)
 
 
 @executor("PTTL")
-def pttl(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    time_left = db.ttl(key)
+async def pttl(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    time_left = client.db.ttl(key)
+
     if time_left < 0:
         return build_integer(time_left)
     time_left_in_milliseconds = int(time_left * 1000)
-    return build_integer(time_left_in_milliseconds)
+
+    response = build_integer(time_left_in_milliseconds)
+    await client.write_response(response)
 
 
 @executor("PERSIST")
-def persist(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    status = db.persist(key)
-    return build_integer(status)
+async def persist(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
 
+    key = command_parts[1]
+    status = client.db.persist(key)
 
-@executor("INFO")
-def info(db: Database, command_parts: list[str]):
-    return build_bulk_string("Ok")
+    response = build_integer(status)
+    await client.write_response(response)

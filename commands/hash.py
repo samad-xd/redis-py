@@ -1,92 +1,121 @@
+from client import Client
 from exceptions import ValidationError
 from executor import executor
 from resp import build_array, build_bulk_string, build_integer
-from storage import Database
+from storage import HashStore
 
 
 @executor("HSET")
-def hset(db: Database, command_parts: list[str]):
-    if len(command_parts) < 3:
-        raise ValidationError("key, field(s) and value(s) missing")
-    if len(command_parts) % 2 == 0:
-        raise ValidationError("missing value for a field")
-    key = command_parts[0]
-    fields_values = command_parts[1:]
-    added_count = db.hash_store.hset(key, fields_values)
-    return build_integer(added_count)
+async def hset(client: Client, command_parts: list[str]):
+    if len(command_parts) < 4:
+        raise ValidationError("wrong number of arguments for command")
+
+    if len(command_parts) % 2 != 0:
+        raise ValidationError("wrong number of arguments for 'hset' command")
+
+    key = command_parts[1]
+    fields_values = command_parts[2:]
+    added_count = HashStore.hset(client.db, key, fields_values)
+
+    response = build_integer(added_count)
+    await client.write_response(response)
 
 
 @executor("HGET")
-def hget(db: Database, command_parts: list[str]):
-    if len(command_parts) < 2:
-        raise ValidationError("key and field missing")
-    key = command_parts[0]
-    field = command_parts[1]
-    value = db.hash_store.hget(key, field)
-    return build_bulk_string(value)
+async def hget(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    field = command_parts[2]
+    value = HashStore.hget(client.db, key, field)
+
+    response = build_bulk_string(value)
+    await client.write_response(response)
 
 
 @executor("HMGET")
-def hmget(db: Database, command_parts: list[str]):
-    if len(command_parts) < 2:
-        raise ValidationError("key and field(s) missing")
-    key = command_parts[0]
-    fields = command_parts[1:]
-    values = db.hash_store.hmget(key, fields)
-    return build_array(values)
+async def hmget(client: Client, command_parts: list[str]):
+    if len(command_parts) < 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    fields = command_parts[2:]
+    values = HashStore.hmget(client.db, key, fields)
+
+    response = build_array(values)
+    await client.write_response(response)
 
 
 @executor("HGETALL")
-def hgetall(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    fields_values = db.hash_store.hgetall(key)
-    return build_array(fields_values)
+async def hgetall(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    fields_values = HashStore.hgetall(client.db, key)
+
+    response = build_array(fields_values)
+    await client.write_response(response)
 
 
 @executor("HDEL")
-def hdel(db: Database, command_parts: list[str]):
-    if len(command_parts) < 2:
-        raise ValidationError("key and field missing")
-    key = command_parts[0]
-    fields = command_parts[1:]
-    deleted_count = db.hash_store.hdel(key, fields)
-    return build_integer(deleted_count)
+async def hdel(client: Client, command_parts: list[str]):
+    if len(command_parts) < 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    fields = command_parts[2:]
+    deleted_count = HashStore.hdel(client.db, key, fields)
+
+    response = build_integer(deleted_count)
+    await client.write_response(response)
 
 
 @executor("HEXISTS")
-def hexists(db: Database, command_parts: list[str]):
-    if len(command_parts) < 2:
-        raise ValidationError("key and field missing")
-    key = command_parts[0]
-    field = command_parts[1]
-    exists = db.hash_store.hexists(key, field)
-    return build_integer(exists)
+async def hexists(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    field = command_parts[2]
+    exists = HashStore.hexists(client.db, key, field)
+
+    response = build_integer(exists)
+    await client.write_response(response)
 
 
 @executor("HLEN")
-def hlen(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    length = db.hash_store.hlen(key)
-    return build_integer(length)
+async def hlen(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    length = HashStore.hlen(client.db, key)
+
+    response = build_integer(length)
+    await client.write_response(response)
 
 
 @executor("HKEYS")
-def hkeys(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    fields = db.hash_store.hkeys(key)
-    return build_array(fields)
+async def hkeys(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    fields = HashStore.hkeys(client.db, key)
+
+    response = build_array(fields)
+    await client.write_response(response)
 
 
 @executor("HVALS")
-def hvals(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    values = db.hash_store.hvals(key)
-    return build_array(values)
+async def hvals(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    values = HashStore.hvals(client.db, key)
+
+    response = build_array(values)
+    await client.write_response(response)

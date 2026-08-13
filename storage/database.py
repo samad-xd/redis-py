@@ -1,24 +1,15 @@
+import asyncio
 import time
+from collections import defaultdict, deque
 
-from models import Entry
-
-from .hash import HashStore
-from .list import ListStore
-from .set import SetStore
-from .sorted_set import SortedSetStore
-from .stream import StreamStore
-from .string import StringStore
+from models import Entry, Waiter
 
 
 class Database:
     def __init__(self):
         self.db: dict[str, Entry] = {}
-        self.string_store = StringStore(self.db)
-        self.list_store = ListStore(self.db)
-        self.hash_store = HashStore(self.db)
-        self.set_store = SetStore(self.db)
-        self.sorted_set_store = SortedSetStore(self.db)
-        self.stream_store = StreamStore(self.db)
+        self.waiters: dict[str, deque] = defaultdict(deque)
+        self.lock = asyncio.Lock()
 
     def clear_db(self):
         self.db.clear()
@@ -31,6 +22,14 @@ class Database:
             expire = self.db.get(key).expire
             if expire != 0 and time.time() >= expire:
                 self.db.pop(key)
+
+    def get(self, key: str):
+        self.ensure_key_life(key)
+        entry = self.db.get(key)
+        return entry
+
+    def set(self, key: str, entry: Entry):
+        self.db[key] = entry
 
     def type(self, key):
         self.ensure_key_life(key)
@@ -74,3 +73,19 @@ class Database:
             return 0
         item.expire = 0
         return 1
+
+    def pop_active_waiter(self, key: str):
+        waiters_q = self.waiters.get(key)
+        while waiters_q:
+            waiter = waiters_q.popleft()
+            if waiter.active and not waiter.future.done():
+                return waiter
+        return None
+
+    def deactivate_waiter(self, waiter: Waiter):
+        waiter.active = False
+        waiter.future.cancel()
+
+    def finish_waiter(self, waiter: Waiter, pair: list[str]):
+        waiter.active = False
+        waiter.future.set_result(pair)

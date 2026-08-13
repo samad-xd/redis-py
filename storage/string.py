@@ -1,78 +1,89 @@
 from exceptions import WrongTypeError
 from models import Entry, RedisType
 
+from .database import Database
+
 
 class StringStore:
-    def __init__(self, db: dict[str, Entry]):
-        self.db = db
-
-    def _validate_type(self, entry: Entry):
+    @staticmethod
+    def _validate_type(entry: Entry):
         if entry.type != RedisType.STRING:
-            raise WrongTypeError("value is not a string")
+            raise WrongTypeError(
+                "Operation against a key holding the wrong kind of value"
+            )
 
-    def get(self, key: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def get(db: Database, key: str):
+        entry = db.get(key)
         if entry is None:
             return None
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         return entry.data
 
-    def set(self, key: str, value: str):
-        self.db[key] = Entry(type=RedisType.STRING, data=value)
+    @staticmethod
+    def set(db: Database, key: str, value: str):
+        entry = Entry(type=RedisType.STRING, data=value)
+        db.set(key, entry)
 
-    def incr(self, key: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def incr(db: Database, key: str):
+        entry = db.get(key)
         if entry is None:
-            self.set(key, str(1))
+            StringStore.set(key, str(1))
             return 1
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         new_value = int(entry.data) + 1
         entry.data = str(new_value)
         return new_value
 
-    def decr(self, key: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def decr(db: Database, key: str):
+        entry = db.get(key)
         if entry is None:
-            self.set(key, str(-1))
+            StringStore.set(key, str(-1))
             return -1
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         new_value = int(entry.data) - 1
         entry.data = str(new_value)
         return new_value
 
-    def incrby(self, key: str, incr_value: int):
-        entry = self.db.get(key)
+    @staticmethod
+    def incrby(db: Database, key: str, incr_value: int):
+        entry = db.get(key)
         if entry is None:
-            self.set(key, str(incr_value))
+            StringStore.set(key, str(incr_value))
             return incr_value
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         new_value = int(entry.data) + incr_value
         entry.data = str(new_value)
         return new_value
 
-    def decrby(self, key: str, decr_value: int):
-        entry = self.db.get(key)
+    @staticmethod
+    def decrby(db: Database, key: str, decr_value: int):
+        entry = db.get(key)
         if entry is None:
-            self.set(key, str(-decr_value))
+            StringStore.set(key, str(-decr_value))
             return -decr_value
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         new_value = int(entry.data) - decr_value
         entry.data = str(new_value)
         return new_value
 
-    def append(self, key, value):
-        entry = self.db.get(key)
+    @staticmethod
+    def append(db: Database, key, value):
+        entry = db.get(key)
         if entry is None:
-            self.set(key, value)
+            StringStore.set(key, value)
             return len(value)
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         new_value = entry.data + value
         entry.data = new_value
         return len(new_value)
 
-    def strlen(self, key):
-        entry = self.db.get(key)
+    @staticmethod
+    def strlen(db: Database, key):
+        entry = db.get(key)
         if entry is None:
             return 0
-        self._validate_type(entry)
+        StringStore._validate_type(entry)
         return len(entry.data)

@@ -1,19 +1,22 @@
 from exceptions import WrongTypeError
 from models import Entry, RedisType
 
+from .database import Database
+
 
 class SortedSetStore:
-    def __init__(self, db: dict[str, Entry]):
-        self.db = db
-
-    def _validate_type(self, entry: Entry):
+    @staticmethod
+    def _validate_type(entry: Entry):
         if entry.type != RedisType.SORTED_SET:
-            raise WrongTypeError("value is not a sorted set")
+            raise WrongTypeError(
+                "Operation against a key holding the wrong kind of value"
+            )
 
-    def zadd(self, key: str, score_member_pairs: list[tuple]):
-        entry = self.db.get(key)
+    @staticmethod
+    def zadd(db: Database, key: str, score_member_pairs: list[tuple]):
+        entry = db.get(key)
         if entry:
-            self._validate_type(entry)
+            SortedSetStore._validate_type(entry)
         else:
             entry = Entry(type=RedisType.SORTED_SET, data={})
         hash = entry.data
@@ -22,22 +25,24 @@ class SortedSetStore:
             if member not in hash:
                 added_count += 1
             hash[member] = score
-        self.db[key] = entry
+        db.set(key, entry)
         return added_count
 
-    def zscore(self, key: str, member: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def zscore(db: Database, key: str, member: str):
+        entry = db.get(key)
         if entry is None:
             return None
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         return hash.get(member)
 
-    def zrank(self, key: str, member: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def zrank(db: Database, key: str, member: str):
+        entry = db.get(key)
         if entry is None:
             return None
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         score = hash.get(member)
         if score is None:
@@ -48,11 +53,12 @@ class SortedSetStore:
                 rank += 1
         return rank
 
-    def zrevrank(self, key: str, member: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def zrevrank(db: Database, key: str, member: str):
+        entry = db.get(key)
         if entry is None:
             return None
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         score = hash.get(member)
         if score is None:
@@ -63,11 +69,12 @@ class SortedSetStore:
                 rank += 1
         return rank
 
-    def zrange(self, key: str, start: float, stop: float, with_scores: bool):
-        entry = self.db.get(key)
+    @staticmethod
+    def zrange(db: Database, key: str, start: float, stop: float, with_scores: bool):
+        entry = db.get(key)
         if entry is None:
             return []
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         sorted_members = sorted(hash.items(), key=lambda x: (x[1], x[0]))
         n = len(sorted_members)
@@ -82,11 +89,12 @@ class SortedSetStore:
             return [value for pair in sorted_members[start:stop] for value in pair]
         return [member for member, _ in sorted_members[start:stop]]
 
-    def zrevrange(self, key: str, start: float, stop: float, with_scores: bool):
-        entry = self.db.get(key)
+    @staticmethod
+    def zrevrange(db: Database, key: str, start: float, stop: float, with_scores: bool):
+        entry = db.get(key)
         if entry is None:
             return []
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         sorted_members = sorted(hash.items(), key=lambda x: (x[1], x[0]), reverse=True)
         n = len(sorted_members)
@@ -101,11 +109,12 @@ class SortedSetStore:
             return [value for pair in sorted_members[start:stop] for value in pair]
         return [member for member, _ in sorted_members[start:stop]]
 
-    def zrem(self, key: str, members: list[str]):
-        entry = self.db.get(key)
+    @staticmethod
+    def zrem(db: Database, key: str, members: list[str]):
+        entry = db.get(key)
         if entry is None:
             return 0
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         removed_count = 0
         for member in members:
@@ -113,23 +122,25 @@ class SortedSetStore:
                 hash.pop(member)
                 removed_count += 1
         if not hash:
-            self.db.pop(key)
+            db.delete(key)
         return removed_count
 
-    def zcard(self, key: str):
-        entry = self.db.get(key)
+    @staticmethod
+    def zcard(db: Database, key: str):
+        entry = db.get(key)
         if entry is None:
             return 0
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         length = len(hash)
         return length
 
-    def zcount(self, key: str, min: float, max: float):
-        entry = self.db.get(key)
+    @staticmethod
+    def zcount(db: Database, key: str, min: float, max: float):
+        entry = db.get(key)
         if entry is None:
             return 0
-        self._validate_type(entry)
+        SortedSetStore._validate_type(entry)
         hash = entry.data
         count = 0
         for score in hash.values():

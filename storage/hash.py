@@ -1,19 +1,22 @@
 from exceptions import WrongTypeError
 from models import Entry, RedisType
 
+from .database import Database
+
 
 class HashStore:
-    def __init__(self, db: dict[str, Entry]):
-        self.db = db
-
-    def _validate_type(self, entry: Entry):
+    @staticmethod
+    def _validate_type(entry: Entry):
         if entry.type != RedisType.HASH:
-            raise WrongTypeError("value is not a hash")
+            raise WrongTypeError(
+                "Operation against a key holding the wrong kind of value"
+            )
 
-    def hset(self, key, fields_values):
-        entry = self.db.get(key)
+    @staticmethod
+    def hset(db: Database, key, fields_values):
+        entry = db.get(key)
         if entry:
-            self._validate_type(entry)
+            HashStore._validate_type(entry)
         else:
             entry = Entry(type=RedisType.HASH, data={})
         hash = entry.data
@@ -24,46 +27,50 @@ class HashStore:
             if field not in hash:
                 newly_added_fields_count += 1
             hash[field] = value
-        self.db[key] = entry
+        db.set(key, entry)
         return newly_added_fields_count
 
-    def hget(self, key, field):
-        entry = self.db.get(key)
+    @staticmethod
+    def hget(db: Database, key, field):
+        entry = db.get(key)
         if not entry:
             return None
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         return hash.get(field, None)
 
-    def hmget(self, key, fields):
+    @staticmethod
+    def hmget(db: Database, key, fields):
         values = []
-        entry = self.db.get(key)
+        entry = db.get(key)
         if not entry:
             return values
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         for field in fields:
             value = hash.get(field, None)
             values.append(value)
         return values
 
-    def hgetall(self, key):
+    @staticmethod
+    def hgetall(db: Database, key):
         fields_values = []
-        entry = self.db.get(key)
+        entry = db.get(key)
         if not entry:
             return fields_values
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         for field, value in hash.items():
             fields_values.append(field)
             fields_values.append(value)
         return fields_values
 
-    def hdel(self, key, fields):
-        entry = self.db.get(key)
+    @staticmethod
+    def hdel(db: Database, key, fields):
+        entry = db.get(key)
         if not entry:
             return 0
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         deleted_count = 0
         for field in fields:
@@ -71,37 +78,41 @@ class HashStore:
                 del hash[field]
                 deleted_count += 1
         if len(hash) == 0:
-            self.db.pop(key)
+            db.pop(key)
         return deleted_count
 
-    def hexists(self, key, field):
-        entry = self.db.get(key)
+    @staticmethod
+    def hexists(db: Database, key, field):
+        entry = db.get(key)
         if not entry:
             return 0
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         return 1 if field in hash else 0
 
-    def hlen(self, key):
-        entry = self.db.get(key)
+    @staticmethod
+    def hlen(db: Database, key):
+        entry = db.get(key)
         if not entry:
             return 0
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         return len(hash)
 
-    def hkeys(self, key):
-        entry = self.db.get(key)
+    @staticmethod
+    def hkeys(db: Database, key):
+        entry = db.get(key)
         if not entry:
             return []
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         return list(hash.keys())
 
-    def hvals(self, key):
-        entry = self.db.get(key)
+    @staticmethod
+    def hvals(db: Database, key):
+        entry = db.get(key)
         if not entry:
             return []
-        self._validate_type(entry)
+        HashStore._validate_type(entry)
         hash = entry.data
         return list(hash.values())

@@ -1,124 +1,156 @@
+from client import Client
 from exceptions import ValidationError
 from executor import executor
 from resp import build_array, build_bulk_string, build_integer
-from storage import Database
+from storage import SetStore
 
 
 @executor("SADD")
-def sadd(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    if len(command_parts) == 1:
-        raise ValidationError("member(s) missing")
-    key = command_parts[0]
-    members = command_parts[1:]
-    count = db.set_store.sadd(key, members)
-    return build_integer(count)
+async def sadd(client: Client, command_parts: list[str]):
+    if len(command_parts) < 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    members = command_parts[2:]
+    count = SetStore.sadd(client.db, key, members)
+
+    response = build_integer(count)
+    await client.write_response(response)
 
 
 @executor("SREM")
-def srem(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    if len(command_parts) == 1:
-        raise ValidationError("member(s) missing")
-    key = command_parts[0]
-    members = command_parts[1:]
-    count = db.set_store.srem(key, members)
-    return build_integer(count)
+async def srem(client: Client, command_parts: list[str]):
+    if len(command_parts) < 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    members = command_parts[2:]
+    count = SetStore.srem(client.db, key, members)
+
+    response = build_integer(count)
+    await client.write_response(response)
 
 
 @executor("SISMEMBER")
-def sismember(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    if len(command_parts) == 1:
-        raise ValidationError("member missing")
-    key = command_parts[0]
-    member = command_parts[1]
-    count = db.set_store.sismember(key, member)
-    return build_integer(count)
+async def sismember(client: Client, command_parts: list[str]):
+    if len(command_parts) != 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    member = command_parts[2]
+    count = SetStore.sismember(client.db, key, member)
+
+    response = build_integer(count)
+    await client.write_response(response)
 
 
 @executor("SMEMBERS")
-def smembers(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    members = db.set_store.smembers(key)
-    return build_array(members)
+async def smembers(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    members = SetStore.smembers(client.db, key)
+
+    response = build_array(members)
+    await client.write_response(response)
 
 
 @executor("SCARD")
-def scard(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    length = db.set_store.scard(key)
-    return build_integer(length)
+async def scard(client: Client, command_parts: list[str]):
+    if len(command_parts) != 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    length = SetStore.scard(client.db, key)
+
+    response = build_integer(length)
+    await client.write_response(response)
 
 
 @executor("SPOP")
-def spop(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
+async def spop(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2 or len(command_parts) > 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
     count = None
-    if len(command_parts) == 2:
+    if len(command_parts) == 3:
         try:
-            count = int(command_parts[1])
+            count = int(command_parts[2])
             if count < 0:
-                raise ValidationError("count must be positive")
+                raise ValueError
         except ValueError:
-            raise ValueError("count must be a number")
+            raise ValidationError("value is out of range, must be positive")
+
     if count is None:
-        popped_member = db.set_store.spop(key)
-        return build_bulk_string(popped_member)
-    popped_members = db.set_store.spop_with_count(key, count)
-    return build_array(popped_members)
+        popped_member = SetStore.spop(client.db, key)
+        response = build_bulk_string(popped_member)
+    else:
+        popped_members = SetStore.spop_with_count(client.db, key, count)
+        response = build_array(popped_members)
+
+    await client.write_response(response)
 
 
 @executor("SRANDMEMBER")
-def srandmember(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
+async def srandmember(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2 or len(command_parts) > 3:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
     count = None
-    if len(command_parts) == 2:
+
+    if len(command_parts) == 3:
         try:
-            count = int(command_parts[1])
+            count = int(command_parts[2])
+            if count < 0:
+                raise ValueError
         except ValueError:
-            raise ValueError("count must be a number")
+            raise ValidationError("value is out of range, must be positive")
+
     if count is None:
-        random_member = db.set_store.srandmember(key)
-        return build_bulk_string(random_member)
-    random_members = db.set_store.srandmember_with_count(key, count)
-    return build_array(random_members)
+        random_member = SetStore.srandmember(client.db, key)
+        response = build_bulk_string(random_member)
+    else:
+        random_members = SetStore.srandmember_with_count(client.db, key, count)
+        response = build_array(random_members)
+
+    await client.write_response(response)
 
 
 @executor("SINTER")
-def sinter(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    keys = command_parts
-    inter_members = db.set_store.sinter(keys)
-    return build_array(inter_members)
+async def sinter(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    keys = command_parts[1:]
+    inter_members = SetStore.sinter(client.db, keys)
+
+    response = build_array(inter_members)
+    await client.write_response(response)
 
 
 @executor("SUNION")
-def sunion(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    keys = command_parts
-    union_members = db.set_store.sunion(keys)
-    return build_array(union_members)
+async def sunion(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    keys = command_parts[1:]
+    inter_members = SetStore.sunion(client.db, keys)
+
+    response = build_array(inter_members)
+    await client.write_response(response)
 
 
 @executor("SDIFF")
-def sdiff(db: Database, command_parts: list[str]):
-    if not command_parts:
-        raise ValidationError("key missing")
-    key = command_parts[0]
-    keys = command_parts[1:]
-    diff_members = db.set_store.sdiff(key, keys)
-    return build_array(diff_members)
+async def sdiff(client: Client, command_parts: list[str]):
+    if len(command_parts) < 2:
+        raise ValidationError("wrong number of arguments for command")
+
+    key = command_parts[1]
+    keys = command_parts[2:] if len(command_parts) > 2 else []
+    diff_members = SetStore.sdiff(client.db, key, keys)
+
+    response = build_array(diff_members)
+    await client.write_response(response)

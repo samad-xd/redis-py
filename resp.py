@@ -1,7 +1,7 @@
 from exceptions import RESPParseError
 
 
-async def parse_data(reader):
+async def parse_incoming_data(reader):
     line = await reader.readline()
 
     if not line:
@@ -61,14 +61,18 @@ def build_error(kind, error_message):
 def build_bulk_string(string):
     if string is None:
         return "$-1\r\n"
+
     if not isinstance(string, str):
         string = str(string)
+
     return f"${len(string)}\r\n{string}\r\n"
 
 
 def build_array(data):
     if isinstance(data, list):
         return f"*{len(data)}\r\n{''.join(build_array(item) for item in data)}"
+
     elif isinstance(data, int):
         return build_integer(data)
+
     return build_bulk_string(data)
