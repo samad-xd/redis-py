@@ -52,7 +52,8 @@ Or connect programmatically using Python:
 ```python
 import redis
 
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+r = redis.Redis(host="localhost", port=6379, protocol=2, decode_responses=True)
+
 r.set("greeting", "Hello from redis-py!")
 print(r.get("greeting"))  # Output: Hello from redis-py!
 ```
