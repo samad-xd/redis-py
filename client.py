@@ -1,14 +1,20 @@
+import asyncio
+from typing import ClassVar
+
 from exceptions import RESPParseError, ValidationError, WrongTypeError
 from executor import executor
 from resp import build_error, parse_incoming_data
-from storage import Store
+from storage import Channels, Store
 
 
 class Client:
+    subscription_commands: ClassVar[set] = {"SUBSCRIBE", "UNSUBSCRIBE", "PUBLISH"}
+
     def __init__(self):
         self.selected_db = 0
         self.store = Store()
-        self._subscribed = False
+        self.channels = Channels()
+        self.subscriptions = set()
 
     def change_db(self, db_index):
         if self.store.exists(db_index):
@@ -24,7 +30,9 @@ class Client:
     def db(self):
         return self.store.get_db(self.selected_db)
 
-    async def handle_incoming_messages(self, reader, writer, addr):
+    async def handle_incoming_messages(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, addr
+    ):
         self.reader = reader
         self.writer = writer
 
@@ -38,6 +46,14 @@ class Client:
 
                 if not args:
                     response = build_error("ERR", "empty command")
+
+                if (
+                    self.subscriptions
+                    and args[0].upper() not in Client.subscription_commands
+                ):
+                    raise ValidationError(
+                        "only SUBSCRIBE / UNSUBSCRIBE are allowed in this context"
+                    )
 
                 await executor.execute(self, args)
 

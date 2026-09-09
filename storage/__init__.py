@@ -1,3 +1,4 @@
+from .channel import Channels
 from .database import Database
 from .hash import HashStore
 from .list import ListStore
@@ -8,6 +9,7 @@ from .stream import StreamStore
 from .string import StringStore
 
 __all__ = [
+    "Channels",
     "Database",
     "HashStore",
     "ListStore",

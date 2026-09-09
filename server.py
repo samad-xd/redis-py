@@ -6,7 +6,7 @@ from client import Client
 from storage import Store
 
 
-async def handle_client(reader, writer):
+async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     addr = writer.get_extra_info("peername")
     print(f"Connected to {addr}")
 

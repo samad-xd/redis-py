@@ -1,8 +1,3 @@
-from itertools import islice
-
-from resp import build_bulk_string, build_simple_string
-
-
 class Executor:
     def __init__(self):
         self.routes = {}
@@ -25,15 +20,3 @@ class Executor:
 
 
 executor = Executor()
-
-
-@executor("PING")
-async def ping(client, *args):
-    response = build_simple_string("PONG")
-    await client.write_response(response)
-
-
-@executor("ECHO")
-async def echo(client, command_parts: list[str]):
-    response = build_bulk_string(" ".join(islice(command_parts, 1, None)))
-    await client.write_response(response)
