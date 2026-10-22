@@ -128,10 +128,11 @@ class ListStore:
         dq = entry.data
         n = len(dq)
         if start < 0:
-            start = n + start
+            start = max(0, n + start)
         if stop < 0:
-            stop = n + stop + 1
-        if stop <= start:
+            stop = n + stop
+        stop = min(stop, n - 1)
+        if start > stop or start >= n:
             return []
         items = [item for item in islice(dq, start, min(stop, n))]
         return items
@@ -189,7 +190,7 @@ class ListStore:
             else:
                 result = await asyncio.wait_for(future, timeout)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             async with db.lock:
                 db.deactivate_waiter(waiter)
             return None
@@ -219,7 +220,7 @@ class ListStore:
             if timeout == 0:
                 return await future
             return await asyncio.wait_for(future, timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             async with db.lock:
                 db.deactivate_waiter(waiter)
             return None

@@ -29,7 +29,7 @@ class StringStore:
     def incr(db: Database, key: str):
         entry = db.get(key)
         if entry is None:
-            StringStore.set(key, str(1))
+            StringStore.set(db, key, str(1))
             return 1
         StringStore._validate_type(entry)
         new_value = int(entry.data) + 1
@@ -40,7 +40,7 @@ class StringStore:
     def decr(db: Database, key: str):
         entry = db.get(key)
         if entry is None:
-            StringStore.set(key, str(-1))
+            StringStore.set(db, key, str(-1))
             return -1
         StringStore._validate_type(entry)
         new_value = int(entry.data) - 1
@@ -51,7 +51,7 @@ class StringStore:
     def incrby(db: Database, key: str, incr_value: int):
         entry = db.get(key)
         if entry is None:
-            StringStore.set(key, str(incr_value))
+            StringStore.set(db, key, str(incr_value))
             return incr_value
         StringStore._validate_type(entry)
         new_value = int(entry.data) + incr_value
@@ -62,7 +62,7 @@ class StringStore:
     def decrby(db: Database, key: str, decr_value: int):
         entry = db.get(key)
         if entry is None:
-            StringStore.set(key, str(-decr_value))
+            StringStore.set(db, key, str(-decr_value))
             return -decr_value
         StringStore._validate_type(entry)
         new_value = int(entry.data) - decr_value
@@ -73,7 +73,7 @@ class StringStore:
     def append(db: Database, key, value):
         entry = db.get(key)
         if entry is None:
-            StringStore.set(key, value)
+            StringStore.set(db, key, value)
             return len(value)
         StringStore._validate_type(entry)
         new_value = entry.data + value

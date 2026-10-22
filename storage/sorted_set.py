@@ -79,11 +79,11 @@ class SortedSetStore:
         sorted_members = sorted(hash.items(), key=lambda x: (x[1], x[0]))
         n = len(sorted_members)
         if start < 0:
-            start = n + start
+            start = max(0, n + start)
         if stop < 0:
-            stop = n + stop + 1
-        stop = min(stop, n)
-        if not start < stop:
+            stop = n + stop
+        stop = min(stop, n - 1)
+        if start > stop or start >= n:
             return []
         if with_scores:
             return [value for pair in sorted_members[start:stop] for value in pair]
@@ -99,11 +99,11 @@ class SortedSetStore:
         sorted_members = sorted(hash.items(), key=lambda x: (x[1], x[0]), reverse=True)
         n = len(sorted_members)
         if start < 0:
-            start = n + start
+            start = max(0, n + start)
         if stop < 0:
-            stop = n + stop + 1
-        stop = min(stop, n)
-        if not start < stop:
+            stop = n + stop
+        stop = min(stop, n - 1)
+        if start > stop or start >= n:
             return []
         if with_scores:
             return [value for pair in sorted_members[start:stop] for value in pair]

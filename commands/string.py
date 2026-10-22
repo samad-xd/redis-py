@@ -48,7 +48,7 @@ async def set(client: Client, command_parts: list[str]):
         client.db.expire(key, seconds)
 
     elif len(command_parts) == 4:
-        condition_type = command_parts[2]
+        condition_type = command_parts[3].upper()
 
         if condition_type not in ("NX", "XX"):
             raise ValidationError("syntax error")

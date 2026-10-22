@@ -123,22 +123,15 @@ class SetStore:
 
     @staticmethod
     def sinter(db: Database, keys: list[str]):
-        min_len = float("inf")
-        smallest_set = None
         sets = []
         for key in keys:
             entry = db.get(key)
             if entry is None:
                 return []
             SetStore._validate_type(entry)
-            s: set = entry.data
-            length = len(s)
-            if length < min_len:
-                min_len = length
-                smallest_set = s
-            else:
-                sets.append(s)
-        inter_members = smallest_set.intersection(*sets)
+            sets.append(entry.data)
+        sets.sort(key=len)
+        inter_members = sets[0].intersection(*sets[1:])
         return list(inter_members)
 
     @staticmethod

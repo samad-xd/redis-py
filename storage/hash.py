@@ -78,7 +78,7 @@ class HashStore:
                 del hash[field]
                 deleted_count += 1
         if len(hash) == 0:
-            db.pop(key)
+            db.delete(key)
         return deleted_count
 
     @staticmethod

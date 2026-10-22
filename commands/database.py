@@ -123,10 +123,10 @@ async def pttl(client: Client, command_parts: list[str]):
     time_left = client.db.ttl(key)
 
     if time_left < 0:
-        return build_integer(time_left)
-    time_left_in_milliseconds = int(time_left * 1000)
-
-    response = build_integer(time_left_in_milliseconds)
+        response = build_integer(time_left)
+    else:
+        time_left_in_milliseconds = int(time_left * 1000)
+        response = build_integer(time_left_in_milliseconds)
     await client.write_response(response)
 
 
